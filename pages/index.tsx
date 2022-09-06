@@ -3,19 +3,25 @@ import { useEffect, useState } from "react";
 import Mathe from "../components/mathe";
 import { useFishStore } from "../store/store";
 import * as Tabs from "@radix-ui/react-tabs";
+import { PrismaClient } from "@prisma/client";
 
-const Home: NextPage = () => {
+const Home: NextPage = ({ posts }) => {
   const bears = useFishStore((state) => state.fishes);
   const increasePopulation = useFishStore((state) => state.addAFish);
   const decreasePopulation = useFishStore((state) => state.removeFish);
-
   const [value, setValue] = useState(0);
 
   useEffect(() => {
     setValue(bears);
   }, [bears]);
+
   return (
     <div>
+      <ul>
+        {posts.map((post) => (
+          <li key={post.id}>{post.title}</li>
+        ))}
+      </ul>
       <Tabs.Root defaultValue="tab1" orientation="vertical">
         <Tabs.List aria-label="tabs example">
           <Tabs.Trigger
@@ -44,3 +50,25 @@ const Home: NextPage = () => {
 };
 
 export default Home;
+
+export async function getStaticProps() {
+  const prisma = new PrismaClient();
+  const user = await prisma.user.create({
+    data: {
+      name: "Alice",
+      email: "alice@prisma.io",
+      posts: {
+        create: { title: "Hello World" },
+      },
+      profile: {
+        create: { bio: "I like turtles" },
+      },
+    },
+  });
+  const posts = await prisma.post.findMany();
+
+  console.log(user);
+  return {
+    props: { posts: JSON.parse(JSON.stringify(posts)) },
+  };
+}
